@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/api && pnpm prisma generate && pnpm tsup src/app.ts --format esm --outDir dist",
+  "buildCommand": "npx prisma generate --schema=apps/api/prisma/schema.prisma",
   "installCommand": "pnpm install",
   "framework": null,
   "outputDirectory": "public",

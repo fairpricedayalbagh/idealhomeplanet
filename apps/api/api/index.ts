@@ -1,3 +1,3 @@
 // @ts-nocheck
-import { app } from "../dist/app.mjs";
-export default app;
+const { app } = require("../dist/app.js");
+module.exports = app;

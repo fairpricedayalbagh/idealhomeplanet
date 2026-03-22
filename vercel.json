@@ -1,0 +1,32 @@
+{
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "outputDirectory": "apps/web/dist",
+  "functions": {
+    "apps/api/api/index.ts": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/apps/api/api/index.ts"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/rotate-qr",
+      "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/auto-checkout",
+      "schedule": "59 23 * * *"
+    },
+    {
+      "path": "/api/cron/generate-salary",
+      "schedule": "0 2 1 * *"
+    }
+  ]
+}

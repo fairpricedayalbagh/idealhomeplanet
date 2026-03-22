@@ -1,0 +1,226 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum AttendanceType {
+  CHECK_IN
+  CHECK_OUT
+}
+
+enum SalaryType {
+  HOURLY
+  MONTHLY
+}
+
+enum LeaveType {
+  SICK
+  CASUAL
+  PAID
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SalarySlipStatus {
+  GENERATED
+  PAID
+  CANCELLED
+}
+
+enum PaymentMode {
+  CASH
+  BANK
+  UPI
+}
+
+model User {
+  id              String       @id @default(uuid())
+  name            String
+  phone           String       @unique
+  email           String?
+  pin             String       // hashed 4-digit PIN
+  pinAttempts     Int          @default(0)
+  lockedUntil     DateTime?
+  role            Role         @default(EMPLOYEE)
+  isActive        Boolean      @default(true)
+  profilePhoto    String?
+  designation     String?
+  dateOfBirth     DateTime?    @db.Date
+  dateOfJoining   DateTime     @default(now()) @db.Date
+  address         String?
+  emergencyName   String?
+  emergencyPhone  String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Salary config
+  salaryType      SalaryType   @default(MONTHLY)
+  monthlySalary   Float?
+  hourlyRate      Float?
+  bankAccount     String?
+  bankIfsc        String?
+  upiId           String?
+
+  // Leave balance
+  sickLeaveBalance   Int       @default(12)
+  casualLeaveBalance Int       @default(12)
+  paidLeaveBalance   Int       @default(15)
+
+  // Shift schedule
+  shiftStart      String       @default("09:00")
+  shiftEnd        String       @default("18:00")
+  graceMins       Int          @default(15)
+
+  // Weekend / off-days — JSON array e.g. [0,6] for Sun+Sat
+  weeklyOffDays   Json         @default("[0]")
+
+  attendances     Attendance[]
+  salarySlips     SalarySlip[]
+  leaves          Leave[]
+  refreshTokens   RefreshToken[]
+}
+
+model Attendance {
+  id         String         @id @default(uuid())
+  userId     String
+  type       AttendanceType
+  timestamp  DateTime       @default(now())
+  qrTokenId  String?
+  deviceId   String?
+  isManual   Boolean        @default(false)
+  addedBy    String?
+  note       String?
+
+  user       User           @relation(fields: [userId], references: [id])
+  qrToken    QrToken?       @relation(fields: [qrTokenId], references: [id])
+
+  @@index([userId, timestamp])
+}
+
+model QrToken {
+  id        String     @id @default(uuid())
+  token     String     @unique
+  date      DateTime   @db.Date
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+
+  attendances Attendance[]
+
+  @@index([date])
+}
+
+model SalarySlip {
+  id                 String           @id @default(uuid())
+  userId             String
+  month              Int
+  year               Int
+  totalDays          Int
+  totalHours         Float
+  overtimeHours      Float            @default(0)
+  daysAbsent         Int              @default(0)
+  daysLate           Int              @default(0)
+  leaveDays          Int              @default(0)
+  grossAmount        Float
+  deductionBreakdown Json             @default("{}")
+  deductions         Float            @default(0)
+  bonus              Float            @default(0)
+  advanceDeduction   Float            @default(0)
+  netAmount          Float
+  status             SalarySlipStatus @default(GENERATED)
+  paymentMode        PaymentMode?
+  paidAt             DateTime?
+  generatedAt        DateTime         @default(now())
+
+  user               User             @relation(fields: [userId], references: [id])
+
+  @@unique([userId, month, year])
+}
+
+model Leave {
+  id          String      @id @default(uuid())
+  userId      String
+  leaveType   LeaveType
+  startDate   DateTime    @db.Date
+  endDate     DateTime    @db.Date
+  totalDays   Int
+  reason      String
+  status      LeaveStatus @default(PENDING)
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  reviewNote  String?
+  createdAt   DateTime    @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+
+  @@index([userId, startDate])
+}
+
+model Holiday {
+  id          String   @id @default(uuid())
+  name        String
+  date        DateTime @db.Date
+  isOptional  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@unique([date])
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  userId      String
+  token       String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  user        User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String
+  action      String
+  entityType  String
+  entityId    String
+  details     Json?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entityType, entityId])
+}
+
+model StoreConfig {
+  id                  String  @id @default("default")
+  storeName           String
+  timezone            String  @default("Asia/Kolkata")
+  qrRotation          String  @default("daily")
+
+  defaultShiftStart   String  @default("09:00")
+  defaultShiftEnd     String  @default("18:00")
+  defaultGraceMins    Int     @default(15)
+  defaultWeeklyOff    Json    @default("[0]")
+
+  autoCheckoutEnabled Boolean @default(true)
+  autoCheckoutTime    String  @default("23:59")
+
+  defaultSickLeave    Int     @default(12)
+  defaultCasualLeave  Int     @default(12)
+  defaultPaidLeave    Int     @default(15)
+}

@@ -1,0 +1,22 @@
+{
+  "name": "ideal-home-planet",
+  "private": true,
+  "scripts": {
+    "dev:api": "pnpm --filter @ihp/api dev",
+    "dev:web": "pnpm --filter @ihp/web dev",
+    "build:api": "pnpm --filter @ihp/api build",
+    "build:web": "pnpm --filter @ihp/web build",
+    "build": "pnpm -r build",
+    "db:migrate": "pnpm --filter @ihp/api prisma migrate dev",
+    "db:generate": "pnpm --filter @ihp/api prisma generate",
+    "db:seed": "pnpm --filter @ihp/api prisma db seed",
+    "db:studio": "pnpm --filter @ihp/api prisma studio",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r exec rm -rf dist node_modules"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0"
+}

@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# Environment — NEVER commit secrets
+.env
+.env.local
+.env.*.local
+.env.production
+
+# Prisma
+apps/api/prisma/migrations/**/migration_lock.toml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Vercel
+.vercel/
+
+# Flutter
+apps/mobile/.dart_tool/
+apps/mobile/.packages
+apps/mobile/build/
+apps/mobile/.flutter-plugins
+apps/mobile/.flutter-plugins-dependencies
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+apps/mobile/ios/Pods/
+apps/mobile/ios/.symlinks/
+apps/mobile/ios/Flutter/Generated.xcconfig
+apps/mobile/ios/Flutter/flutter_export_environment.sh
+apps/mobile/.metadata
+*.g.dart
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Claude
+.claude/
+
+# Misc
+*.tgz
+coverage/
+apps/mobile/out.txt

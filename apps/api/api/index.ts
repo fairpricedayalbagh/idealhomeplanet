@@ -1,6 +1,6 @@
-// Import from pre-compiled output (tsup/esbuild, no TS type-checking needed)
+// @ts-nocheck
+// Import from pre-compiled tsup output to avoid Express type issues
 import { app } from "../dist/app.mjs";
 
-// Vercel serverless handler — export Express app as default
-// Vercel wraps it automatically via @vercel/node
+// Vercel serverless handler
 export default app;

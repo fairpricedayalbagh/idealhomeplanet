@@ -1,18 +1,19 @@
 {
-  "buildCommand": "pnpm build",
+  "buildCommand": "cd apps/api && pnpm prisma generate && pnpm tsup src/app.ts --format esm --outDir dist",
   "installCommand": "pnpm install",
   "framework": null,
-  "outputDirectory": "apps/web/dist",
+  "outputDirectory": "public",
   "functions": {
-    "apps/api/api/index.ts": {
+    "api/index.ts": {
       "memory": 1024,
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "apps/api/**"
     }
   },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "/apps/api/api/index.ts"
+      "destination": "/api"
     }
   ],
   "crons": [

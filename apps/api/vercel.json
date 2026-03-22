@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm exec prisma generate",
+  "buildCommand": "pnpm exec prisma generate && pnpm exec tsup src/app.ts --format esm --outDir dist --no-splitting",
   "installCommand": "cd ../.. && pnpm install",
   "framework": null,
   "outputDirectory": "public",

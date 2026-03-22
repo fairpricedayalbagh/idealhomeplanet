@@ -1,5 +1,5 @@
 {
-  "buildCommand": "npx prisma generate --schema=apps/api/prisma/schema.prisma",
+  "buildCommand": "pwd && ls -la && ls apps/ 2>/dev/null || echo 'no apps dir' && pnpm --filter @ihp/api exec prisma generate",
   "installCommand": "pnpm install",
   "framework": null,
   "outputDirectory": "public",

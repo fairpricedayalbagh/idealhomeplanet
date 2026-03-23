@@ -41,6 +41,7 @@ dependencies:
   google_fonts: any
   flutter_svg: any
   mobile_scanner: any
+  table_calendar: any
   intl: any
 
 dev_dependencies:

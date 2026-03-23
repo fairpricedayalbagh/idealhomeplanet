@@ -1,7 +1,7 @@
 class ApiConstants {
   // Use 10.0.2.2 for Android emulator, localhost for web/desktop
   static const String baseUrl = String.fromEnvironment('API_URL',
-      defaultValue: 'http://localhost:3000/api');
+      defaultValue: 'https://idealhomeplanet-api.vercel.app/api');
 
   // Auth
   static const String login = '/auth/login';

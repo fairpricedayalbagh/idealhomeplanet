@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { authenticate, requireRole } from "../middleware/auth.js";
-import { generateSalarySchema } from "@ihp/shared";
+import { generateSalarySchema, previewSalarySchema, generateSingleSalarySchema } from "@ihp/shared";
 import * as salaryService from "../services/salary.service.js";
 import { createAuditLog } from "../services/audit.service.js";
 import { AppError } from "../services/auth.service.js";
 
-export const salaryRoutes = Router();
+export const salaryRoutes: Router = Router();
 
 // GET /api/salary/my — Employee's salary slips
 salaryRoutes.get("/my", authenticate, requireRole("EMPLOYEE"), async (req, res, next) => {
@@ -55,6 +55,73 @@ salaryRoutes.post("/generate", authenticate, requireRole("ADMIN"), async (req, r
 
     res.json({ success: true, data: results });
   } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/salary/month-status — All employees and their slip status
+salaryRoutes.get("/month-status", authenticate, requireRole("ADMIN"), async (req, res, next) => {
+  try {
+    const month = parseInt(req.query.month as string);
+    const year = parseInt(req.query.year as string);
+    if (!month || !year) {
+      res.status(400).json({ success: false, error: "Month and year are required" });
+      return;
+    }
+
+    const statusList = await salaryService.getMonthStatus(month, year);
+    res.json({ success: true, data: statusList });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/salary/preview
+salaryRoutes.post("/preview", authenticate, requireRole("ADMIN"), async (req, res, next) => {
+  try {
+    const parsed = previewSalarySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: "Invalid input", details: parsed.error.flatten() });
+      return;
+    }
+
+    const preview = await salaryService.previewSalary(parsed.data.userId, parsed.data.month, parsed.data.year);
+    res.json({ success: true, data: preview });
+  } catch (err) {
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ success: false, error: err.message, code: err.code });
+      return;
+    }
+    next(err);
+  }
+});
+
+// POST /api/salary/generate/single
+salaryRoutes.post("/generate/single", authenticate, requireRole("ADMIN"), async (req, res, next) => {
+  try {
+    const parsed = generateSingleSalarySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ success: false, error: "Invalid input", details: parsed.error.flatten() });
+      return;
+    }
+
+    const { userId, month, year, overrides } = parsed.data;
+    const slip = await salaryService.generateSingleSalary(userId, month, year, overrides);
+
+    await createAuditLog({
+      userId: req.user!.userId,
+      action: "SALARY_GENERATED_SINGLE",
+      entityType: "SalarySlip",
+      entityId: slip.id,
+      details: { targetUserId: userId, month, year, overrides },
+    });
+
+    res.json({ success: true, data: slip });
+  } catch (err) {
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({ success: false, error: err.message, code: err.code });
+      return;
+    }
     next(err);
   }
 });

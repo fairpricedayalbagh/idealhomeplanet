@@ -40,6 +40,38 @@ class SalaryRepository {
     };
   }
 
+  Future<List<Map<String, dynamic>>> getMonthStatus({required int month, required int year}) async {
+    final response = await _dio.get(ApiConstants.salaryMonthStatus, queryParameters: {
+      'month': month,
+      'year': year,
+    });
+    return (response.data['data'] as List).cast<Map<String, dynamic>>();
+  }
+
+  Future<SalarySlip> previewSalary({required String userId, required int month, required int year}) async {
+    final response = await _dio.post(ApiConstants.salaryPreview, data: {
+      'userId': userId,
+      'month': month,
+      'year': year,
+    });
+    return SalarySlip.fromJson(response.data['data']);
+  }
+
+  Future<SalarySlip> generateSingleSalary({
+    required String userId,
+    required int month,
+    required int year,
+    Map<String, dynamic>? overrides,
+  }) async {
+    final response = await _dio.post(ApiConstants.salaryGenerateSingle, data: {
+      'userId': userId,
+      'month': month,
+      'year': year,
+      if (overrides != null) 'overrides': overrides,
+    });
+    return SalarySlip.fromJson(response.data['data']);
+  }
+
   Future<List<Map<String, dynamic>>> generateSalaries(int month, int year) async {
     final response = await _dio.post(ApiConstants.salaryGenerate, data: {
       'month': month,

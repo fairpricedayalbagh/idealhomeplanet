@@ -36,7 +36,8 @@ export async function generateSalaries(month: number, year: number) {
     }
 
     try {
-      const slip = await generateSalaryForEmployee(emp, month, year, startDate, endDate, daysInMonth, holidayDates);
+      const data = await calculateSalaryDetails(emp, month, year, startDate, endDate, daysInMonth, holidayDates);
+      await prisma.salarySlip.create({ data });
       results.push({ userId: emp.id, name: emp.name, status: "generated" });
     } catch (err) {
       results.push({ userId: emp.id, name: emp.name, status: `error: ${(err as Error).message}` });
@@ -46,7 +47,77 @@ export async function generateSalaries(month: number, year: number) {
   return results;
 }
 
-async function generateSalaryForEmployee(
+export async function previewSalary(userId: string, month: number, year: number) {
+  const emp = await prisma.user.findUnique({
+    where: { id: userId, role: "EMPLOYEE", isActive: true },
+  });
+  if (!emp) throw new AppError("Active employee not found", 404, "NOT_FOUND");
+
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0);
+  const daysInMonth = endDate.getDate();
+  const holidays = await getHolidaysInRange(startDate, new Date(year, month, 0, 23, 59, 59));
+  const holidayDates = new Set<string>(holidays.map((h: { date: Date }) => h.date.toISOString().split("T")[0]));
+
+  const details = await calculateSalaryDetails(emp, month, year, startDate, endDate, daysInMonth, holidayDates);
+  return details;
+}
+
+export async function generateSingleSalary(
+  userId: string,
+  month: number,
+  year: number,
+  overrides?: {
+    bonus?: number;
+    deductions?: number;
+    grossAmount?: number;
+    netAmount?: number;
+  }
+) {
+  const existing = await prisma.salarySlip.findUnique({
+    where: { userId_month_year: { userId, month, year } },
+  });
+  if (existing) throw new AppError("Salary already generated for this month", 400, "EXISTS");
+
+  const details = await previewSalary(userId, month, year);
+
+  // Apply overrides
+  if (overrides) {
+    if (overrides.bonus !== undefined) details.bonus = overrides.bonus;
+    if (overrides.deductions !== undefined) details.deductions = overrides.deductions;
+    if (overrides.grossAmount !== undefined) details.grossAmount = overrides.grossAmount;
+    
+    // Recalculate net if anything changed and netAmount wasn't explicitly overridden
+    if (overrides.netAmount !== undefined) {
+      details.netAmount = overrides.netAmount;
+    } else {
+      details.netAmount = details.grossAmount + details.bonus - details.deductions;
+    }
+  }
+
+  return prisma.salarySlip.create({ data: details });
+}
+
+export async function getMonthStatus(month: number, year: number) {
+  const employees = await prisma.user.findMany({
+    where: { role: "EMPLOYEE", isActive: true },
+    select: { id: true, name: true, phone: true, designation: true },
+    orderBy: { name: "asc" }
+  });
+
+  const slips = await prisma.salarySlip.findMany({
+    where: { month, year },
+  });
+
+  const slipMap = new Map(slips.map(s => [s.userId, s]));
+
+  return employees.map(emp => ({
+    user: emp,
+    slip: slipMap.get(emp.id) || null,
+  }));
+}
+
+export async function calculateSalaryDetails(
   emp: UserRecord,
   month: number,
   year: number,
@@ -217,23 +288,22 @@ async function generateSalaryForEmployee(
   const totalDeductions = Object.values(deductionBreakdown).reduce((sum, v) => sum + v, 0);
   const netAmount = grossAmount - totalDeductions;
 
-  return prisma.salarySlip.create({
-    data: {
-      userId: emp.id,
-      month,
-      year,
-      totalDays: daysPresent,
-      totalHours: Math.round(totalHours * 100) / 100,
-      overtimeHours: Math.round(overtimeHours * 100) / 100,
-      daysAbsent,
-      daysLate,
-      leaveDays: totalLeaveDays,
-      grossAmount: Math.round(grossAmount * 100) / 100,
-      deductionBreakdown,
-      deductions: Math.round(totalDeductions * 100) / 100,
-      netAmount: Math.round(netAmount * 100) / 100,
-    },
-  });
+  return {
+    userId: emp.id,
+    month,
+    year,
+    totalDays: daysPresent,
+    totalHours: Math.round(totalHours * 100) / 100,
+    overtimeHours: Math.round(overtimeHours * 100) / 100,
+    daysAbsent,
+    daysLate,
+    leaveDays: totalLeaveDays,
+    grossAmount: Math.round(grossAmount * 100) / 100,
+    deductionBreakdown,
+    deductions: Math.round(totalDeductions * 100) / 100,
+    netAmount: Math.round(netAmount * 100) / 100,
+    bonus: 0,
+  };
 }
 
 export async function getMySalarySlips(userId: string) {

@@ -32,6 +32,9 @@ class ApiConstants {
   static const String salaryMy = '/salary/my';
   static const String salaryAll = '/salary/all';
   static const String salaryGenerate = '/salary/generate';
+  static const String salaryMonthStatus = '/salary/month-status';
+  static const String salaryPreview = '/salary/preview';
+  static const String salaryGenerateSingle = '/salary/generate/single';
   static String salaryPay(String id) => '/salary/$id/pay';
   static String salaryBonus(String id) => '/salary/$id/bonus';
   static String salaryPdf(String id) => '/salary/$id/pdf';

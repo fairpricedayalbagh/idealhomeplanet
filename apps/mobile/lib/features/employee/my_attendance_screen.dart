@@ -344,38 +344,25 @@ class _MyAttendanceScreenState extends ConsumerState<MyAttendanceScreen> {
 
     return Container(
       margin: const EdgeInsets.all(3),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
+        borderRadius: BorderRadius.circular(8),
+        color: isSelected ? Colors.grey.withOpacity(0.15) : null,
         border: isToday
-            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 2)
-            : isSelected
-                ? Border.all(color: Colors.grey[700]!, width: 2)
-                : null,
+            ? Border.all(color: Theme.of(context).colorScheme.primary, width: 1.5)
+            : null,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            '${day.day}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isToday || isSelected ? FontWeight.w700 : FontWeight.w500,
-              color: isToday
+      child: Text(
+        '${day.day}',
+        style: TextStyle(
+          fontSize: 15,
+          fontWeight: isToday || isSelected || hasStatus ? FontWeight.w700 : FontWeight.w500,
+          color: hasStatus
+              ? color
+              : (isToday
                   ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).textTheme.bodyMedium?.color,
-            ),
-          ),
-          if (hasStatus)
-            Container(
-              margin: const EdgeInsets.only(top: 2),
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
-            ),
-        ],
+                  : Theme.of(context).textTheme.bodyMedium?.color),
+        ),
       ),
     );
   }

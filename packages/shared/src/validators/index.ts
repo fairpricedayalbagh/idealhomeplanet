@@ -55,3 +55,21 @@ export const generateSalarySchema = z.object({
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2020),
 });
+
+export const previewSalarySchema = z.object({
+  userId: z.string().uuid(),
+  month: z.number().int().min(1).max(12),
+  year: z.number().int().min(2020),
+});
+
+export const generateSingleSalarySchema = z.object({
+  userId: z.string().uuid(),
+  month: z.number().int().min(1).max(12),
+  year: z.number().int().min(2020),
+  overrides: z.object({
+    bonus: z.number().min(0).optional(),
+    deductions: z.number().min(0).optional(),
+    grossAmount: z.number().min(0).optional(),
+    netAmount: z.number().min(0).optional(),
+  }).optional(),
+});

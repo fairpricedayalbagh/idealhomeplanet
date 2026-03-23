@@ -53,4 +53,7 @@ class ApiConstants {
 
   // Audit Log
   static const String auditLog = '/audit-log';
+
+  // App Updates
+  static const String appVersion = '/app/version';
 }

@@ -70,9 +70,9 @@ class LeaveBalances {
 
   factory LeaveBalances.fromJson(Map<String, dynamic> json) {
     return LeaveBalances(
-      monthlyCredits: json['monthlyCredits'] as int,
-      usedThisMonth: json['usedThisMonth'] as int,
-      remaining: json['remaining'] as int,
+      monthlyCredits: (json['monthlyCredits'] as num?)?.toInt() ?? 4,
+      usedThisMonth: (json['usedThisMonth'] as num?)?.toInt() ?? 0,
+      remaining: (json['remaining'] as num?)?.toInt() ?? 4,
     );
   }
 }

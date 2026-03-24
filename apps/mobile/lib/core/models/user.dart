@@ -54,7 +54,7 @@ class User {
     this.shiftStart = '09:00',
     this.shiftEnd = '18:00',
     this.graceMins = 15,
-    this.weeklyOffDays = const [0],
+    this.weeklyOffDays = const [],
   });
 
   factory User.fromJson(Map<String, dynamic> json) {

@@ -8,6 +8,7 @@ import { leaveRoutes } from "./leave.routes.js";
 import { holidayRoutes } from "./holiday.routes.js";
 import { auditRoutes } from "./audit.routes.js";
 import { appRoutes } from "./app.routes.js";
+import { advanceRoutes } from "./advance.routes.js";
 
 export const routes = Router();
 
@@ -20,3 +21,4 @@ routes.use("/leave", leaveRoutes);
 routes.use("/holidays", holidayRoutes);
 routes.use("/audit-log", auditRoutes);
 routes.use("/app", appRoutes);
+routes.use("/advance", advanceRoutes);

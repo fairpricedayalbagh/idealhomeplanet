@@ -48,6 +48,12 @@ enum PaymentMode {
   UPI
 }
 
+enum AdvanceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id              String       @id @default(uuid())
   name            String
@@ -76,23 +82,22 @@ model User {
   bankIfsc        String?
   upiId           String?
 
-  // Leave balance
-  sickLeaveBalance   Int       @default(12)
-  casualLeaveBalance Int       @default(12)
-  paidLeaveBalance   Int       @default(15)
+  // Leave credits (per month)
+  monthlyLeaveCredits Int      @default(4)   // leaves given per month; unused → salary bonus
 
   // Shift schedule
   shiftStart      String       @default("09:00")
   shiftEnd        String       @default("18:00")
   graceMins       Int          @default(15)
 
-  // Weekend / off-days — JSON array e.g. [0,6] for Sun+Sat
-  weeklyOffDays   Json         @default("[0]")
+  // Weekend / off-days — JSON array e.g. [0,6] for Sun+Sat; [] = no weekly offs
+  weeklyOffDays   Json         @default("[]")
 
-  attendances     Attendance[]
-  salarySlips     SalarySlip[]
-  leaves          Leave[]
-  refreshTokens   RefreshToken[]
+  attendances      Attendance[]
+  salarySlips      SalarySlip[]
+  leaves           Leave[]
+  refreshTokens    RefreshToken[]
+  advanceRequests  AdvanceRequest[]
 }
 
 model Attendance {
@@ -206,6 +211,28 @@ model AuditLog {
   @@index([entityType, entityId])
 }
 
+model AdvanceRequest {
+  id               String        @id @default(uuid())
+  userId           String
+  requestedAmount  Float
+  approvedAmount   Float?        // admin can modify amount before approving
+  reason           String
+  deductMonth      Int           // which month to deduct from (1-12)
+  deductYear       Int           // which year to deduct from
+  status           AdvanceStatus @default(PENDING)
+  reviewedBy       String?       // admin userId who reviewed
+  reviewedAt       DateTime?
+  reviewNote       String?
+  isDeducted       Boolean       @default(false)  // true once salary generation applies it
+  createdAt        DateTime      @default(now())
+
+  user             User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([deductMonth, deductYear])
+}
+
 model StoreConfig {
   id                  String  @id @default("default")
   storeName           String
@@ -215,12 +242,11 @@ model StoreConfig {
   defaultShiftStart   String  @default("09:00")
   defaultShiftEnd     String  @default("18:00")
   defaultGraceMins    Int     @default(15)
-  defaultWeeklyOff    Json    @default("[0]")
+  defaultWeeklyOff    Json    @default("[]")  // [] = no weekly offs
 
   autoCheckoutEnabled Boolean @default(true)
   autoCheckoutTime    String  @default("23:59")
 
-  defaultSickLeave    Int     @default(12)
-  defaultCasualLeave  Int     @default(12)
-  defaultPaidLeave    Int     @default(15)
+  // Default monthly leave credits (template for new employees)
+  defaultMonthlyLeaveCredits Int @default(4)
 }

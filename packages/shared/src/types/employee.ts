@@ -19,9 +19,7 @@ export interface CreateEmployeeRequest {
   shiftEnd?: string;
   graceMins?: number;
   weeklyOffDays?: number[];
-  sickLeaveBalance?: number;
-  casualLeaveBalance?: number;
-  paidLeaveBalance?: number;
+  monthlyLeaveCredits?: number;
 }
 
 export interface UpdateEmployeeRequest extends Partial<CreateEmployeeRequest> {}

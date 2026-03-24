@@ -51,6 +51,14 @@ class ApiConstants {
   static const String holidays = '/holidays';
   static String holidayById(String id) => '/holidays/$id';
 
+  // Advance Requests
+  static const String advanceApply = '/advance/apply';
+  static const String advanceMy = '/advance/my';
+  static const String advanceAll = '/advance/all';
+  static const String advancePending = '/advance/pending';
+  static String advanceApprove(String id) => '/advance/$id/approve';
+  static String advanceReject(String id) => '/advance/$id/reject';
+
   // Audit Log
   static const String auditLog = '/audit-log';
 

@@ -9,7 +9,7 @@ import '../../core/models/holiday.dart';
 import '../../shared/utils/date_helpers.dart';
 
 /// Status for each calendar day.
-enum _DayStatus { present, absent, late, weekOff, holiday, leave, future, noData }
+enum _DayStatus { present, absent, late, holiday, leave, future, noData }
 
 class MyAttendanceScreen extends ConsumerStatefulWidget {
   const MyAttendanceScreen({super.key});
@@ -66,7 +66,6 @@ class _MyAttendanceScreenState extends ConsumerState<MyAttendanceScreen> {
   Map<DateTime, _DayStatus> _buildDayStatuses() {
     final auth = ref.read(authProvider);
     final user = auth.user;
-    final weeklyOff = user?.weeklyOffDays ?? [0];
     final shiftStart = user?.shiftStart ?? '09:00';
     final graceMins = user?.graceMins ?? 15;
     final now = DateTime.now();
@@ -109,14 +108,6 @@ class _MyAttendanceScreenState extends ConsumerState<MyAttendanceScreen> {
       // Holiday check
       if (holidayDates.contains(dateKey)) {
         statuses[normalizedDate] = _DayStatus.holiday;
-        continue;
-      }
-
-      // Weekly off check (0=Sun, 1=Mon, ..., 6=Sat)
-      // DateTime.weekday: 1=Mon, 7=Sun → convert to 0=Sun format
-      final dayOfWeek = date.weekday == 7 ? 0 : date.weekday;
-      if (weeklyOff.contains(dayOfWeek)) {
-        statuses[normalizedDate] = _DayStatus.weekOff;
         continue;
       }
 
@@ -175,8 +166,6 @@ class _MyAttendanceScreenState extends ConsumerState<MyAttendanceScreen> {
         return const Color(0xFFEF5350); // Red
       case _DayStatus.late:
         return const Color(0xFFFF9800); // Orange
-      case _DayStatus.weekOff:
-        return const Color(0xFF42A5F5); // Blue
       case _DayStatus.holiday:
         return const Color(0xFFAB47BC); // Purple
       case _DayStatus.leave:
@@ -195,8 +184,6 @@ class _MyAttendanceScreenState extends ConsumerState<MyAttendanceScreen> {
         return 'Absent';
       case _DayStatus.late:
         return 'Late';
-      case _DayStatus.weekOff:
-        return 'Week Off';
       case _DayStatus.holiday:
         return 'Holiday';
       case _DayStatus.leave:
@@ -307,7 +294,6 @@ class _MyAttendanceScreenState extends ConsumerState<MyAttendanceScreen> {
                           _legendDot(const Color(0xFF4CAF50), 'Present'),
                           _legendDot(const Color(0xFFEF5350), 'Absent'),
                           _legendDot(const Color(0xFFFF9800), 'Late'),
-                          _legendDot(const Color(0xFF42A5F5), 'Week Off'),
                           _legendDot(const Color(0xFFAB47BC), 'Holiday'),
                         ],
                       ),

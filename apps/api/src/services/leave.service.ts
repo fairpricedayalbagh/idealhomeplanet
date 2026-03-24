@@ -15,8 +15,8 @@ export async function applyLeave(
     throw new AppError("End date must be after start date", 400, "VALIDATION_ERROR");
   }
 
-  // Calculate total leave days excluding off-days
-  const offDays = (user.weeklyOffDays as number[]) ?? [0];
+  // Count leave days (all days count — no weekly off exclusions in this store)
+  const offDays = (user.weeklyOffDays as number[]) ?? [];
   let totalDays = 0;
   const current = new Date(start);
   while (current <= end) {
@@ -30,17 +30,27 @@ export async function applyLeave(
     throw new AppError("No working days in selected range", 400, "VALIDATION_ERROR");
   }
 
-  // Check balance for non-unpaid leave
-  if (data.leaveType !== "UNPAID") {
-    const balanceField = getBalanceField(data.leaveType);
-    const balance = user[balanceField] as number;
-    if (balance < totalDays) {
-      throw new AppError(
-        `Insufficient ${data.leaveType.toLowerCase()} leave balance. Available: ${balance}, Requested: ${totalDays}`,
-        400,
-        "INSUFFICIENT_LEAVE"
-      );
-    }
+  // Enforce monthly leave limit
+  const reqStart = new Date(data.startDate);
+  const monthStart = new Date(reqStart.getFullYear(), reqStart.getMonth(), 1);
+  const monthEnd = new Date(reqStart.getFullYear(), reqStart.getMonth() + 1, 0, 23, 59, 59);
+
+  const approvedThisMonth = await prisma.leave.findMany({
+    where: {
+      userId,
+      status: "APPROVED",
+      startDate: { gte: monthStart, lte: monthEnd },
+    },
+  });
+  const usedThisMonth = approvedThisMonth.reduce((sum, l) => sum + l.totalDays, 0);
+  const monthlyCredits = user.monthlyLeaveCredits ?? 4;
+
+  if (usedThisMonth + totalDays > monthlyCredits) {
+    throw new AppError(
+      `Leave limit exceeded. You have ${monthlyCredits - usedThisMonth} leave${monthlyCredits - usedThisMonth === 1 ? "" : "s"} remaining this month.`,
+      400,
+      "LEAVE_LIMIT_EXCEEDED"
+    );
   }
 
   return prisma.leave.create({
@@ -56,6 +66,10 @@ export async function applyLeave(
 }
 
 export async function getMyLeaves(userId: string) {
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
   const [leaves, user] = await Promise.all([
     prisma.leave.findMany({
       where: { userId },
@@ -63,23 +77,24 @@ export async function getMyLeaves(userId: string) {
     }),
     prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        sickLeaveBalance: true,
-        casualLeaveBalance: true,
-        paidLeaveBalance: true,
-      },
+      select: { monthlyLeaveCredits: true },
     }),
   ]);
 
+  // Count approved leave days taken this month
+  const usedThisMonth = leaves
+    .filter((l) => l.status === "APPROVED" && l.startDate >= monthStart && l.startDate <= monthEnd)
+    .reduce((sum, l) => sum + l.totalDays, 0);
+
+  const monthlyCredits = user?.monthlyLeaveCredits ?? 4;
+
   return {
     leaves,
-    balances: user
-      ? {
-          sick: user.sickLeaveBalance,
-          casual: user.casualLeaveBalance,
-          paid: user.paidLeaveBalance,
-        }
-      : null,
+    balances: {
+      monthlyCredits,
+      usedThisMonth,
+      remaining: Math.max(0, monthlyCredits - usedThisMonth),
+    },
   };
 }
 
@@ -124,15 +139,7 @@ export async function approveLeave(leaveId: string, adminId: string, reviewNote?
     throw new AppError("Leave already reviewed", 400, "VALIDATION_ERROR");
   }
 
-  // Deduct leave balance if not unpaid
-  if (leave.leaveType !== "UNPAID") {
-    const balanceField = getBalanceField(leave.leaveType);
-    await prisma.user.update({
-      where: { id: leave.userId },
-      data: { [balanceField]: { decrement: leave.totalDays } },
-    });
-  }
-
+  // No balance deduction — salary calculation handles the leave cost/credit logic
   return prisma.leave.update({
     where: { id: leaveId },
     data: {
@@ -160,12 +167,4 @@ export async function rejectLeave(leaveId: string, adminId: string, reviewNote?:
       reviewNote,
     },
   });
-}
-
-function getBalanceField(leaveType: "SICK" | "CASUAL" | "PAID"): "sickLeaveBalance" | "casualLeaveBalance" | "paidLeaveBalance" {
-  switch (leaveType) {
-    case "SICK": return "sickLeaveBalance";
-    case "CASUAL": return "casualLeaveBalance";
-    case "PAID": return "paidLeaveBalance";
-  }
 }

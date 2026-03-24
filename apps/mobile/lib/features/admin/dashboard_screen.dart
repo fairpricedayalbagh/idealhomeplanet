@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/auth/auth_provider.dart';
 import '../../core/providers/attendance_provider.dart';
+import '../../core/providers/advance_provider.dart';
 import '../../core/providers/leave_provider.dart';
 import '../../shared/widgets/stat_card.dart';
 import '../../shared/widgets/attendance_tile.dart';
@@ -15,6 +16,7 @@ class AdminDashboardScreen extends ConsumerWidget {
     final auth = ref.watch(authProvider);
     final todayAsync = ref.watch(todayAttendanceProvider);
     final pendingAsync = ref.watch(pendingLeavesProvider);
+    final pendingAdvancesAsync = ref.watch(pendingAdvancesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -33,6 +35,7 @@ class AdminDashboardScreen extends ConsumerWidget {
         onRefresh: () async {
           ref.invalidate(todayAttendanceProvider);
           ref.invalidate(pendingLeavesProvider);
+          ref.invalidate(pendingAdvancesProvider);
         },
         child: ListView(
           padding: const EdgeInsets.all(16),
@@ -105,6 +108,38 @@ class AdminDashboardScreen extends ConsumerWidget {
               loading: () => const SizedBox.shrink(),
               error: (_, __) => const SizedBox.shrink(),
             ),
+            // Pending advances badge
+            pendingAdvancesAsync.when(
+              data: (pending) => pending.isNotEmpty
+                  ? GestureDetector(
+                      onTap: () => context.push('/admin/advances'),
+                      child: Container(
+                        margin: const EdgeInsets.only(top: 8),
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: Colors.purple.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.purple.withOpacity(0.3)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.account_balance_wallet_outlined, color: Colors.purple),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                '${pending.length} pending advance request${pending.length > 1 ? 's' : ''}',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
+                            const Icon(Icons.chevron_right, color: Colors.purple),
+                          ],
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+            ),
             const SizedBox(height: 20),
 
             // Quick actions
@@ -125,6 +160,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                 _QuickAction(icon: Icons.event_note, label: 'Leaves', onTap: () => context.push('/admin/leaves')),
                 _QuickAction(icon: Icons.celebration, label: 'Holidays', onTap: () => context.push('/admin/holidays')),
                 _QuickAction(icon: Icons.edit_calendar, label: 'Manual', onTap: () => context.push('/admin/manual-attendance')),
+                _QuickAction(icon: Icons.account_balance_wallet_outlined, label: 'Advances', onTap: () => context.push('/admin/advances')),
                 _QuickAction(icon: Icons.history, label: 'Audit Log', onTap: () => context.push('/admin/audit-log')),
               ],
             ),

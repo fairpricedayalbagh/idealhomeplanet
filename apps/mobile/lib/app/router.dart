@@ -11,9 +11,12 @@ import 'package:ideal_home_planet/features/employee/my_attendance_screen.dart';
 import 'package:ideal_home_planet/features/employee/my_salary_screen.dart';
 import 'package:ideal_home_planet/features/employee/my_leaves_screen.dart';
 import 'package:ideal_home_planet/features/employee/apply_leave_screen.dart';
+import 'package:ideal_home_planet/features/employee/apply_advance_screen.dart';
+import 'package:ideal_home_planet/features/employee/my_advances_screen.dart';
 import 'package:ideal_home_planet/features/employee/profile_screen.dart';
 
 // Admin screens
+import 'package:ideal_home_planet/features/admin/advance_management_screen.dart';
 import 'package:ideal_home_planet/features/admin/dashboard_screen.dart';
 import 'package:ideal_home_planet/features/admin/qr_display_screen.dart';
 import 'package:ideal_home_planet/features/admin/employee_list_screen.dart';
@@ -101,6 +104,16 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'employee-profile',
         builder: (context, state) => const ProfileScreen(),
       ),
+      GoRoute(
+        path: '/employee/apply-advance',
+        name: 'employee-apply-advance',
+        builder: (context, state) => const ApplyAdvanceScreen(),
+      ),
+      GoRoute(
+        path: '/employee/advances',
+        name: 'employee-advances',
+        builder: (context, state) => const MyAdvancesScreen(),
+      ),
 
       // Admin routes
       GoRoute(
@@ -160,6 +173,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/admin/audit-log',
         name: 'admin-audit-log',
         builder: (context, state) => const AuditLogScreen(),
+      ),
+      GoRoute(
+        path: '/admin/advances',
+        name: 'admin-advances',
+        builder: (context, state) => const AdvanceManagementScreen(),
       ),
     ],
   );

@@ -22,9 +22,7 @@ const userSelectFields = {
   bankAccount: true,
   bankIfsc: true,
   upiId: true,
-  sickLeaveBalance: true,
-  casualLeaveBalance: true,
-  paidLeaveBalance: true,
+  monthlyLeaveCredits: true,
   shiftStart: true,
   shiftEnd: true,
   graceMins: true,
@@ -90,10 +88,8 @@ export async function createEmployee(data: CreateEmployeeRequest) {
       shiftStart: data.shiftStart,
       shiftEnd: data.shiftEnd,
       graceMins: data.graceMins,
-      weeklyOffDays: data.weeklyOffDays ?? [0],
-      sickLeaveBalance: data.sickLeaveBalance,
-      casualLeaveBalance: data.casualLeaveBalance,
-      paidLeaveBalance: data.paidLeaveBalance,
+      weeklyOffDays: data.weeklyOffDays ?? [],
+      monthlyLeaveCredits: data.monthlyLeaveCredits,
     },
     select: userSelectFields,
   });
@@ -119,9 +115,7 @@ export async function updateEmployee(id: string, data: UpdateEmployeeRequest) {
   if (data.shiftEnd !== undefined) updateData.shiftEnd = data.shiftEnd;
   if (data.graceMins !== undefined) updateData.graceMins = data.graceMins;
   if (data.weeklyOffDays !== undefined) updateData.weeklyOffDays = data.weeklyOffDays;
-  if (data.sickLeaveBalance !== undefined) updateData.sickLeaveBalance = data.sickLeaveBalance;
-  if (data.casualLeaveBalance !== undefined) updateData.casualLeaveBalance = data.casualLeaveBalance;
-  if (data.paidLeaveBalance !== undefined) updateData.paidLeaveBalance = data.paidLeaveBalance;
+  if (data.monthlyLeaveCredits !== undefined) updateData.monthlyLeaveCredits = data.monthlyLeaveCredits;
   if (data.dateOfJoining !== undefined) updateData.dateOfJoining = new Date(data.dateOfJoining);
   if (data.dateOfBirth !== undefined) updateData.dateOfBirth = new Date(data.dateOfBirth);
 

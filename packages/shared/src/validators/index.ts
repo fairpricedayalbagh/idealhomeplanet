@@ -39,9 +39,7 @@ export const createEmployeeSchema = z.object({
   shiftEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   graceMins: z.number().int().min(0).max(60).optional(),
   weeklyOffDays: z.array(z.number().int().min(0).max(6)).optional(),
-  sickLeaveBalance: z.number().int().min(0).optional(),
-  casualLeaveBalance: z.number().int().min(0).optional(),
-  paidLeaveBalance: z.number().int().min(0).optional(),
+  monthlyLeaveCredits: z.number().int().min(0).optional(),
 });
 
 export const applyLeaveSchema = z.object({
@@ -60,6 +58,18 @@ export const previewSalarySchema = z.object({
   userId: z.string().uuid(),
   month: z.number().int().min(1).max(12),
   year: z.number().int().min(2020),
+});
+
+export const applyAdvanceSchema = z.object({
+  requestedAmount: z.number().positive("Amount must be positive"),
+  reason: z.string().min(1, "Reason is required"),
+  deductMonth: z.number().int().min(1).max(12),
+  deductYear: z.number().int().min(2020),
+});
+
+export const approveAdvanceSchema = z.object({
+  approvedAmount: z.number().positive("Amount must be positive").optional(),
+  reviewNote: z.string().optional(),
 });
 
 export const generateSingleSalarySchema = z.object({

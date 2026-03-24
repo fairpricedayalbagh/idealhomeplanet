@@ -105,24 +105,43 @@ class EmployeeHomeScreen extends ConsumerWidget {
               ),
             ),
             const SizedBox(height: 12),
-            // Secondary action — Apply Leave
-            OutlinedButton.icon(
-              onPressed: () => context.push('/employee/apply-leave'),
-              icon: const Icon(Icons.event_busy),
-              label: const Text('Apply Leave'),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                minimumSize: const Size(double.infinity, 0),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+            // Secondary actions row
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/employee/apply-leave'),
+                    icon: const Icon(Icons.event_busy),
+                    label: const Text('Apply Leave'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.push('/employee/apply-advance'),
+                    icon: const Icon(Icons.account_balance_wallet_outlined),
+                    label: const Text('Advance'),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 
-            // Leave Balances
+            // Monthly Leave Credits
             Text(
-              'Leave Balance',
+              'This Month\'s Leaves',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 12),
@@ -132,33 +151,37 @@ class EmployeeHomeScreen extends ConsumerWidget {
                 if (balances == null) {
                   return const Text('No balance info available');
                 }
-                return Row(
+                return Column(
                   children: [
-                    Expanded(
-                      child: StatCard(
-                        title: 'Sick',
-                        value: '${balances.sick}',
-                        icon: Icons.local_hospital,
-                        color: Colors.red,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: StatCard(
-                        title: 'Casual',
-                        value: '${balances.casual}',
-                        icon: Icons.beach_access,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: StatCard(
-                        title: 'Paid',
-                        value: '${balances.paid}',
-                        icon: Icons.paid,
-                        color: Colors.green,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: StatCard(
+                            title: 'Credits',
+                            value: '${balances.monthlyCredits}',
+                            icon: Icons.calendar_month,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: StatCard(
+                            title: 'Used',
+                            value: '${balances.usedThisMonth}',
+                            icon: Icons.event_busy,
+                            color: Colors.orange,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: StatCard(
+                            title: 'Remaining',
+                            value: '${balances.remaining}',
+                            icon: Icons.event_available,
+                            color: Colors.green,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 );
@@ -191,6 +214,12 @@ class EmployeeHomeScreen extends ConsumerWidget {
               title: 'My Leaves',
               subtitle: 'View leave history & balance',
               onTap: () => context.push('/employee/leaves'),
+            ),
+            _NavCard(
+              icon: Icons.account_balance_wallet_outlined,
+              title: 'My Advances',
+              subtitle: 'View salary advance requests',
+              onTap: () => context.push('/employee/advances'),
             ),
           ],
         ),

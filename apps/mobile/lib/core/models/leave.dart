@@ -58,21 +58,21 @@ class Leave {
 }
 
 class LeaveBalances {
-  final int sick;
-  final int casual;
-  final int paid;
+  final int monthlyCredits;
+  final int usedThisMonth;
+  final int remaining;
 
   LeaveBalances({
-    required this.sick,
-    required this.casual,
-    required this.paid,
+    required this.monthlyCredits,
+    required this.usedThisMonth,
+    required this.remaining,
   });
 
   factory LeaveBalances.fromJson(Map<String, dynamic> json) {
     return LeaveBalances(
-      sick: json['sick'] as int,
-      casual: json['casual'] as int,
-      paid: json['paid'] as int,
+      monthlyCredits: json['monthlyCredits'] as int,
+      usedThisMonth: json['usedThisMonth'] as int,
+      remaining: json['remaining'] as int,
     );
   }
 }

@@ -21,10 +21,8 @@ class User {
   final String? bankIfsc;
   final String? upiId;
 
-  // Leave balances
-  final int sickLeaveBalance;
-  final int casualLeaveBalance;
-  final int paidLeaveBalance;
+  // Monthly leave credits
+  final int monthlyLeaveCredits;
 
   // Shift config
   final String shiftStart;
@@ -52,9 +50,7 @@ class User {
     this.bankAccount,
     this.bankIfsc,
     this.upiId,
-    this.sickLeaveBalance = 12,
-    this.casualLeaveBalance = 12,
-    this.paidLeaveBalance = 15,
+    this.monthlyLeaveCredits = 4,
     this.shiftStart = '09:00',
     this.shiftEnd = '18:00',
     this.graceMins = 15,
@@ -86,16 +82,14 @@ class User {
       bankAccount: json['bankAccount'] as String?,
       bankIfsc: json['bankIfsc'] as String?,
       upiId: json['upiId'] as String?,
-      sickLeaveBalance: json['sickLeaveBalance'] as int? ?? 12,
-      casualLeaveBalance: json['casualLeaveBalance'] as int? ?? 12,
-      paidLeaveBalance: json['paidLeaveBalance'] as int? ?? 15,
+      monthlyLeaveCredits: json['monthlyLeaveCredits'] as int? ?? 4,
       shiftStart: json['shiftStart'] as String? ?? '09:00',
       shiftEnd: json['shiftEnd'] as String? ?? '18:00',
       graceMins: json['graceMins'] as int? ?? 15,
       weeklyOffDays: (json['weeklyOffDays'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList() ??
-          [0],
+          [],
     );
   }
 
@@ -119,9 +113,7 @@ class User {
         'bankAccount': bankAccount,
         'bankIfsc': bankIfsc,
         'upiId': upiId,
-        'sickLeaveBalance': sickLeaveBalance,
-        'casualLeaveBalance': casualLeaveBalance,
-        'paidLeaveBalance': paidLeaveBalance,
+        'monthlyLeaveCredits': monthlyLeaveCredits,
         'shiftStart': shiftStart,
         'shiftEnd': shiftEnd,
         'graceMins': graceMins,

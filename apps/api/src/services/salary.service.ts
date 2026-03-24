@@ -37,7 +37,14 @@ export async function generateSalaries(month: number, year: number) {
 
     try {
       const data = await calculateSalaryDetails(emp, month, year, startDate, endDate, daysInMonth, holidayDates);
-      await prisma.salarySlip.create({ data });
+      const { _pendingAdvanceIds, ...slipData } = data;
+      await prisma.salarySlip.create({ data: slipData });
+      if (_pendingAdvanceIds.length > 0) {
+        await prisma.advanceRequest.updateMany({
+          where: { id: { in: _pendingAdvanceIds } },
+          data: { isDeducted: true },
+        });
+      }
       results.push({ userId: emp.id, name: emp.name, status: "generated" });
     } catch (err) {
       results.push({ userId: emp.id, name: emp.name, status: `error: ${(err as Error).message}` });
@@ -80,22 +87,29 @@ export async function generateSingleSalary(
   if (existing) throw new AppError("Salary already generated for this month", 400, "EXISTS");
 
   const details = await previewSalary(userId, month, year);
+  const { _pendingAdvanceIds, ...slipData } = details as typeof details & { _pendingAdvanceIds: string[] };
 
   // Apply overrides
   if (overrides) {
-    if (overrides.bonus !== undefined) details.bonus = overrides.bonus;
-    if (overrides.deductions !== undefined) details.deductions = overrides.deductions;
-    if (overrides.grossAmount !== undefined) details.grossAmount = overrides.grossAmount;
-    
-    // Recalculate net if anything changed and netAmount wasn't explicitly overridden
+    if (overrides.bonus !== undefined) slipData.bonus = overrides.bonus;
+    if (overrides.deductions !== undefined) slipData.deductions = overrides.deductions;
+    if (overrides.grossAmount !== undefined) slipData.grossAmount = overrides.grossAmount;
+
     if (overrides.netAmount !== undefined) {
-      details.netAmount = overrides.netAmount;
+      slipData.netAmount = overrides.netAmount;
     } else {
-      details.netAmount = details.grossAmount + details.bonus - details.deductions;
+      slipData.netAmount = slipData.grossAmount + slipData.bonus - slipData.deductions;
     }
   }
 
-  return prisma.salarySlip.create({ data: details });
+  const slip = await prisma.salarySlip.create({ data: slipData });
+  if (_pendingAdvanceIds && _pendingAdvanceIds.length > 0) {
+    await prisma.advanceRequest.updateMany({
+      where: { id: { in: _pendingAdvanceIds } },
+      data: { isDeducted: true },
+    });
+  }
+  return slip;
 }
 
 export async function getMonthStatus(month: number, year: number) {
@@ -153,9 +167,8 @@ export async function calculateSalaryDetails(
     },
   });
 
-  // Count leave days in this month
-  let paidLeaveDays = 0;
-  let unpaidLeaveDays = 0;
+  // Count all leave days in this month — all leaves deduct salary equally
+  let totalLeaveDays = 0;
   for (const leave of approvedLeaves) {
     const leaveStart = leave.startDate > startDate ? leave.startDate : startDate;
     const leaveEnd = leave.endDate < endDate ? leave.endDate : endDate;
@@ -163,17 +176,12 @@ export async function calculateSalaryDetails(
     while (current <= leaveEnd) {
       const dateStr = current.toISOString().split("T")[0];
       if (!offDays.includes(current.getDay()) && !holidayDates.has(dateStr)) {
-        if (leave.leaveType === "UNPAID") {
-          unpaidLeaveDays++;
-        } else {
-          paidLeaveDays++;
-        }
+        totalLeaveDays++;
       }
       current.setDate(current.getDate() + 1);
     }
   }
 
-  const totalLeaveDays = paidLeaveDays + unpaidLeaveDays;
 
   // Fetch attendance records
   const attendance = await prisma.attendance.findMany({
@@ -262,28 +270,50 @@ export async function calculateSalaryDetails(
     }
   }
 
-  // Calculate gross amount
-  let grossAmount = 0;
-  if (emp.salaryType === "HOURLY" && emp.hourlyRate) {
-    grossAmount = totalHours * emp.hourlyRate;
-  } else if (emp.salaryType === "MONTHLY" && emp.monthlySalary) {
-    const perDayRate = emp.monthlySalary / workingDaysInMonth;
-    grossAmount = (daysPresent + paidLeaveDays) * perDayRate;
-  }
-
-  // Build deduction breakdown
+  // Per-day rate for monthly salary employees
   const perDayRate = emp.salaryType === "MONTHLY" && emp.monthlySalary
     ? emp.monthlySalary / workingDaysInMonth
     : 0;
 
+  // Calculate gross amount
+  // MONTHLY: full salary for the work period (prorated from joining date if needed)
+  // HOURLY: hours worked × rate
+  let grossAmount = 0;
+  if (emp.salaryType === "HOURLY" && emp.hourlyRate) {
+    grossAmount = totalHours * emp.hourlyRate;
+  } else if (emp.salaryType === "MONTHLY" && emp.monthlySalary) {
+    grossAmount = workingDaysInMonth * perDayRate; // = monthlySalary (or prorated for mid-month joiners)
+  }
+
+  // Build deduction breakdown
+  // Leaves deduct at per-day rate; absences also deduct per-day rate
   const deductionBreakdown: Record<string, number> = {};
   if (latePenalty > 0) deductionBreakdown.late_penalty = Math.round(latePenalty * 100) / 100;
   if (daysAbsent > 0 && perDayRate > 0) {
     deductionBreakdown.absent_deduction = Math.round(daysAbsent * perDayRate * 100) / 100;
   }
-  if (unpaidLeaveDays > 0 && perDayRate > 0) {
-    deductionBreakdown.unpaid_leave = Math.round(unpaidLeaveDays * perDayRate * 100) / 100;
+  if (totalLeaveDays > 0 && perDayRate > 0) {
+    deductionBreakdown.leave_deduction = Math.round(totalLeaveDays * perDayRate * 100) / 100;
   }
+
+  // Fetch approved advances for this month that haven't been deducted yet
+  const pendingAdvances = await prisma.advanceRequest.findMany({
+    where: {
+      userId: emp.id,
+      status: "APPROVED",
+      deductMonth: month,
+      deductYear: year,
+      isDeducted: false,
+    },
+  });
+  const advanceDeduction = pendingAdvances.reduce(
+    (sum, a) => sum + (a.approvedAmount ?? a.requestedAmount),
+    0
+  );
+  if (advanceDeduction > 0) {
+    deductionBreakdown.advance_recovery = Math.round(advanceDeduction * 100) / 100;
+  }
+  const pendingAdvanceIds = pendingAdvances.map((a) => a.id);
 
   const totalDeductions = Object.values(deductionBreakdown).reduce((sum, v) => sum + v, 0);
   const netAmount = grossAmount - totalDeductions;
@@ -301,8 +331,10 @@ export async function calculateSalaryDetails(
     grossAmount: Math.round(grossAmount * 100) / 100,
     deductionBreakdown,
     deductions: Math.round(totalDeductions * 100) / 100,
+    advanceDeduction: Math.round(advanceDeduction * 100) / 100,
     netAmount: Math.round(netAmount * 100) / 100,
     bonus: 0,
+    _pendingAdvanceIds: pendingAdvanceIds,
   };
 }
 

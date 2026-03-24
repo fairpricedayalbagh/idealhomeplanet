@@ -37,33 +37,39 @@ class MyLeavesScreen extends ConsumerWidget {
                     children: [
                       Expanded(
                         child: StatCard(
-                          title: 'Sick',
-                          value: '${balances.sick}',
-                          icon: Icons.local_hospital,
-                          color: Colors.red,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: StatCard(
-                          title: 'Casual',
-                          value: '${balances.casual}',
-                          icon: Icons.beach_access,
+                          title: 'Monthly Credits',
+                          value: '${balances.monthlyCredits}',
+                          icon: Icons.calendar_month,
                           color: Colors.blue,
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: StatCard(
-                          title: 'Paid',
-                          value: '${balances.paid}',
-                          icon: Icons.paid,
+                          title: 'Used',
+                          value: '${balances.usedThisMonth}',
+                          icon: Icons.event_busy,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: StatCard(
+                          title: 'Remaining',
+                          value: '${balances.remaining}',
+                          icon: Icons.savings_outlined,
                           color: Colors.green,
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Max ${balances.monthlyCredits} leaves per month. Each leave deducts a day\'s pay.',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
                 ],
 
                 Text('Leave History', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 18)),

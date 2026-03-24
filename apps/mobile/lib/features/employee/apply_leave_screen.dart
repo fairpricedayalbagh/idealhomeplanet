@@ -18,7 +18,7 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
   final _reasonController = TextEditingController();
   bool _submitting = false;
 
-  final _leaveTypes = ['SICK', 'CASUAL', 'PAID', 'UNPAID'];
+  final _leaveTypes = ['SICK', 'CASUAL', 'UNPAID'];
 
   @override
   void dispose() {
@@ -43,6 +43,19 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
         }
       });
     }
+  }
+
+  int _selectedDayCount() {
+    if (_startDate == null || _endDate == null) return 0;
+    int count = 0;
+    final current = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+    final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+    DateTime d = current;
+    while (!d.isAfter(end)) {
+      count++;
+      d = d.add(const Duration(days: 1));
+    }
+    return count;
   }
 
   Future<void> _submit() async {
@@ -70,18 +83,21 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
       ref.invalidate(myLeavesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Leave applied successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Leave applied successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.of(context).pop();
       }
     } catch (e) {
-      String msg = 'Failed to apply leave';
-      if (e.toString().contains('INSUFFICIENT_LEAVE')) {
-        msg = 'Insufficient leave balance';
-      }
       if (mounted) {
+        final msg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(msg.contains('DioException') ? 'Failed to apply leave' : msg),
+            backgroundColor: Colors.red,
+          ),
         );
         setState(() => _submitting = false);
       }
@@ -96,33 +112,68 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
       balances = data['balances'] as LeaveBalances?;
     });
 
-    int? remaining;
-    if (balances != null) {
-      switch (_leaveType) {
-        case 'SICK': remaining = balances!.sick;
-        case 'CASUAL': remaining = balances!.casual;
-        case 'PAID': remaining = balances!.paid;
-      }
-    }
+    final dayCount = _selectedDayCount();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Apply Leave')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          // Monthly leave credits banner
+          if (balances != null)
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: balances!.remaining > 0
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: balances!.remaining > 0
+                      ? Colors.green.withOpacity(0.3)
+                      : Colors.orange.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_month,
+                    color: balances!.remaining > 0 ? Colors.green : Colors.orange,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${balances!.remaining} of ${balances!.monthlyCredits} leaves remaining this month',
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          'Each leave deducts a day\'s pay. Max ${balances!.monthlyCredits} per month.',
+                          style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 20),
+
           // Leave type
           const Text('Leave Type', style: TextStyle(fontWeight: FontWeight.w600)),
           const SizedBox(height: 8),
           DropdownButtonFormField<String>(
             value: _leaveType,
-            items: _leaveTypes.map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+            items: _leaveTypes
+                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                .toList(),
             onChanged: (v) => setState(() => _leaveType = v!),
             decoration: const InputDecoration(border: OutlineInputBorder()),
           ),
-          if (remaining != null) ...[
-            const SizedBox(height: 6),
-            Text('Remaining: $remaining days', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
-          ],
           const SizedBox(height: 20),
 
           // Date range
@@ -177,6 +228,13 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
               ),
             ],
           ),
+          if (dayCount > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              '$dayCount day${dayCount > 1 ? 's' : ''} selected',
+              style: TextStyle(color: Colors.grey[600], fontSize: 13),
+            ),
+          ],
           const SizedBox(height: 20),
 
           // Reason
@@ -196,7 +254,11 @@ class _ApplyLeaveScreenState extends ConsumerState<ApplyLeaveScreen> {
             onPressed: _submitting ? null : _submit,
             style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
             child: _submitting
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
                 : const Text('Submit Application', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ],

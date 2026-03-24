@@ -24,9 +24,7 @@ class _EmployeeFormScreenState extends ConsumerState<EmployeeFormScreen> {
   late final TextEditingController _upiId;
   late final TextEditingController _monthlySalary;
   late final TextEditingController _hourlyRate;
-  late final TextEditingController _sickLeave;
-  late final TextEditingController _casualLeave;
-  late final TextEditingController _paidLeave;
+  late final TextEditingController _monthlyLeaveCredits;
 
   late String _salaryType;
   late TimeOfDay _shiftStart;
@@ -51,16 +49,14 @@ class _EmployeeFormScreenState extends ConsumerState<EmployeeFormScreen> {
     _upiId = TextEditingController(text: e?.upiId ?? '');
     _monthlySalary = TextEditingController(text: e?.monthlySalary?.toString() ?? '');
     _hourlyRate = TextEditingController(text: e?.hourlyRate?.toString() ?? '');
-    _sickLeave = TextEditingController(text: '${e?.sickLeaveBalance ?? 12}');
-    _casualLeave = TextEditingController(text: '${e?.casualLeaveBalance ?? 12}');
-    _paidLeave = TextEditingController(text: '${e?.paidLeaveBalance ?? 15}');
+    _monthlyLeaveCredits = TextEditingController(text: '${e?.monthlyLeaveCredits ?? 4}');
 
     _salaryType = e?.salaryType ?? 'MONTHLY';
     _shiftStart = DateHelpers.parseTimeString(e?.shiftStart ?? '09:00');
     _shiftEnd = DateHelpers.parseTimeString(e?.shiftEnd ?? '18:00');
     _graceMins = e?.graceMins ?? 15;
 
-    final offDayNums = e?.weeklyOffDays ?? [0];
+    final offDayNums = e?.weeklyOffDays ?? [];
     _offDays = List.generate(7, (i) => offDayNums.contains(i));
   }
 
@@ -69,7 +65,7 @@ class _EmployeeFormScreenState extends ConsumerState<EmployeeFormScreen> {
     _name.dispose(); _phone.dispose(); _email.dispose(); _pin.dispose();
     _designation.dispose(); _bankAccount.dispose(); _bankIfsc.dispose();
     _upiId.dispose(); _monthlySalary.dispose(); _hourlyRate.dispose();
-    _sickLeave.dispose(); _casualLeave.dispose(); _paidLeave.dispose();
+    _monthlyLeaveCredits.dispose();
     super.dispose();
   }
 
@@ -89,9 +85,7 @@ class _EmployeeFormScreenState extends ConsumerState<EmployeeFormScreen> {
       'shiftEnd': DateHelpers.timeOfDayToString(_shiftEnd),
       'graceMins': _graceMins,
       'weeklyOffDays': offDayNums,
-      'sickLeaveBalance': int.tryParse(_sickLeave.text) ?? 12,
-      'casualLeaveBalance': int.tryParse(_casualLeave.text) ?? 12,
-      'paidLeaveBalance': int.tryParse(_paidLeave.text) ?? 15,
+      'monthlyLeaveCredits': int.tryParse(_monthlyLeaveCredits.text) ?? 4,
     };
 
     if (_email.text.trim().isNotEmpty) data['email'] = _email.text.trim();
@@ -267,16 +261,16 @@ class _EmployeeFormScreenState extends ConsumerState<EmployeeFormScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Leave Balances
-            const _SectionHeader('Leave Balances'),
-            Row(
-              children: [
-                Expanded(child: TextFormField(controller: _sickLeave, decoration: const InputDecoration(labelText: 'Sick'), keyboardType: TextInputType.number)),
-                const SizedBox(width: 12),
-                Expanded(child: TextFormField(controller: _casualLeave, decoration: const InputDecoration(labelText: 'Casual'), keyboardType: TextInputType.number)),
-                const SizedBox(width: 12),
-                Expanded(child: TextFormField(controller: _paidLeave, decoration: const InputDecoration(labelText: 'Paid'), keyboardType: TextInputType.number)),
-              ],
+            // Leave Credits
+            const _SectionHeader('Monthly Leave Credits'),
+            TextFormField(
+              controller: _monthlyLeaveCredits,
+              decoration: const InputDecoration(
+                labelText: 'Leaves per month',
+                helperText: 'Unused leaves are added to salary at month end',
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 20),
 
